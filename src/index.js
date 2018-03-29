@@ -28,12 +28,27 @@ class ColoredRect extends React.Component {
     const canvas = document.createElement("canvas");
     canvas.width = 300;
     canvas.height = 300;
+
     const context = canvas.getContext("2d");
+
+    context.strokeStyle = "#df4b26";
+    context.lineJoin = "round";
+    context.lineWidth = 4;
 
     this.setState({ canvas, context });
   }
 
-  handleMouseDown = () => {
+  handleMouseDown = ({ evt }) => {
+    const plugin = document.getElementById("wtPlugin");
+    const penAPI = plugin.penAPI;
+    console.log(
+      "mouse down: " +
+        penAPI.isWACOM +
+        " " +
+        penAPI.pointerType +
+        " " +
+        penAPI.isEraser
+    );
     this.setState({ isDrawing: true });
     const stage = this.image.getStage();
     this.lastPointerPosition = stage.getPointerPosition();
@@ -43,16 +58,15 @@ class ColoredRect extends React.Component {
     this.setState({ isDrawing: false });
   };
 
+  handleEvent = ({ evt }) => {
+    console.log("Event " + evt.eventKey);
+  };
   handleMouseMove = ({ evt }) => {
     const { context, isDrawing } = this.state;
 
-    console.log("evt moved", evt.buttons, " state: ", this.state.isDrawing);
+    // console.log("evt moved", evt.buttons, " state: ", this.state.isDrawing);
 
     if (isDrawing) {
-      context.strokeStyle = "#df4b26";
-      context.lineJoin = "round";
-      context.lineWidth = 5;
-
       if (evt.buttons === 1) {
         // draw
         context.globalCompositeOperation = "source-over";
@@ -67,7 +81,7 @@ class ColoredRect extends React.Component {
         y: this.lastPointerPosition.y - this.image.y()
       };
       context.moveTo(localPos.x, localPos.y);
-      console.log("M:", localPos.x, localPos.y);
+      //console.log("M:", localPos.x, localPos.y);
       const stage = this.image.getStage();
 
       var pos = stage.getPointerPosition();
@@ -75,7 +89,7 @@ class ColoredRect extends React.Component {
         x: pos.x - this.image.x(),
         y: pos.y - this.image.y()
       };
-      console.log("T:", localPos.x, localPos.y);
+      //console.log("T:", localPos.x, localPos.y);
       context.lineTo(localPos.x, localPos.y);
       context.closePath();
       context.stroke();
@@ -88,15 +102,16 @@ class ColoredRect extends React.Component {
     const { canvas } = this.state;
 
     return (
-      <Image
-        image={canvas}
+      <Image // this is the  konva element
+        image={canvas} // this is the html canvas element
         ref={node => (this.image = node)}
-        width={220}
-        height={250}
-        stroke="blue"
+        width={400}
+        height={400}
+        stroke="green"
         onMouseDown={this.handleMouseDown}
         onMouseUp={this.handleMouseUp}
         onMouseMove={this.handleMouseMove}
+        onTouchStart={this.handleEvent}
       />
     );
   }
@@ -205,7 +220,15 @@ class Menubar extends React.Component {
     console.log("Menue Action");
   }
 }
-
+class WacomPlugin extends React.Component {
+  render() {
+    return (
+      <object id="wtPlugin" type="application/x-wacomtabletplugin">
+        <param name="onload" value="pluginLoaded" />
+      </object>
+    );
+  }
+}
 class Editor extends React.Component {
   constructor(props) {
     super(props);
@@ -238,6 +261,7 @@ class Editor extends React.Component {
                   this._canv = canv;
                 }}
               />
+              <WacomPlugin />
             </Col>
             <Col xs={2} style={{ border: "2px solid #000000" }}>
               <SnippetWindow canvasf={this.editorCallback} />
